@@ -1,7 +1,7 @@
 {
-  "name": "webpack-s3-uploader",
-  "version": "1.1.11",
-  "description": "Uploads compiled assets to s3 during webpack build",
+  "name": "seedlink-webpack-s3",
+  "version": "1.0.0",
+  "description": "Enhance based on webpack-s3-uploader by matrus2",
   "main": "s3_uploader.js",
   "scripts": {
     "test": "NODE_ENV='test' mocha -t 10000",
@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:matrus2/webpack-s3-uploader.git"
+    "url": "git@github.com:devops2seedlink/webpack-s3-uploader.git"
   },
   "keywords": [
     "s3",
@@ -23,12 +23,9 @@
     "production",
     "cdn"
   ],
-  "author": "Bogusz Przybyslawski",
+  "author": "Seedlink Devops",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/matrus2/webpack-s3-uploader"
-  },
-  "homepage": "https://github.com/matrus2/webpack-s3-uploader",
+  "homepage": "https://github.com/devops2seedlink/webpack-s3-uploader",
   "dependencies": {
     "aws-sdk": "^2.247.1",
     "lodash": "^4.17.10",

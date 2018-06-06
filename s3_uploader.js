@@ -12,6 +12,7 @@ const DEFAULT_UPLOAD_OPTIONS = {
 };
 
 const REQUIRED_S3_UP_OPTS = ['Bucket'];
+const REQUIRED_S3_DEL_OPTS = ['Bucket', 'Prefix'];
 
 const addTrailingS3Sep = fPath => (fPath ? fPath.replace(/\/?(\?|#|$)/, '/$1') : fPath);
 
@@ -47,15 +48,19 @@ module.exports = class S3Plugin {
       include,
       exclude,
       progress,
+      deleteAll,
       s3Options = {},
       s3UploadOptions = {},
+      s3DeleteOptions = {},
       cloudfrontInvalidateOptions = {},
     } = options;
 
     const basePath = options.basePath ? addTrailingS3Sep(options.basePath) : '';
     this.uploadOptions = s3UploadOptions;
+    this.deleteOptions = s3DeleteOptions;
     this.cloudfrontInvalidateOptions = cloudfrontInvalidateOptions;
     this.isConnected = false;
+    this.deleteAll = options.deleteAll ? options.deleteAll : false;
 
     this.options = {
       include,
@@ -73,6 +78,8 @@ module.exports = class S3Plugin {
   apply(compiler) {
     this.connect();
     const hasRequiredUploadOpts = _.every(REQUIRED_S3_UP_OPTS, type => this.uploadOptions[type]);
+    const hasRequiredDeleteOpts = _.every(REQUIRED_S3_DEL_OPTS, type => this.deleteOptions[type]);
+    let error;
 
     this.options.directory = compiler.options.output.path ||
       compiler.options.output.context ||
@@ -80,17 +87,38 @@ module.exports = class S3Plugin {
 
     compiler.plugin('after-emit', (compilation, cb) => {
       if (!hasRequiredUploadOpts) {
-        const error = `S3Plugin-RequiredS3UploadOpts: ${REQUIRED_S3_UP_OPTS.join(', ')}`;
+        error = `S3Plugin-RequiredS3UploadOpts: ${REQUIRED_S3_UP_OPTS.join(', ')}`;
         handleErrors(error, compilation, cb);
       }
 
-      getAssetFiles(compilation)
+      if (this.deleteAll){
+	       if (!hasRequiredDeleteOpts) {
+           error = `S3Plugin-RequiredS3UploadOpts: ${REQUIRED_S3_UP_OPTS.join(', ')}`;
+           handleErrors(error, compilation, cb);
+         }
+      }
+
+        this.deleteDir(compilation)
+        .then(compilation => getAssetFiles(compilation))
         .then(files => this.filterAllowedFiles(files))
         .then(files => this.uploadFiles(files))
         .then(() => this.invalidateCloudfront())
         .then(() => cb())
         .catch(e => handleErrors(e, compilation, cb));
     });
+  }
+
+  deleteDir(compilation) {
+    if (this.deleteAll) {
+      const deleteDir = this.client.deleteDir(this.deleteOptions);
+      return new Promise((resolve, reject) => {
+        deleteDir.on('error', err => reject(err));
+        deleteDir.on('end', () => resolve(compilation));
+      });
+    }
+    return new Promise((resolve, reject) => {
+	     return resolve(compilation);
+    })
   }
 
   filterAllowedFiles(files) {
